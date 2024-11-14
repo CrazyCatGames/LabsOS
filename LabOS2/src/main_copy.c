@@ -56,7 +56,7 @@ void *ThreadFunction(void *args) {
         PrintHelper("Error unlock mutex.\n");
         exit(EXIT_FAILURE);
     }
-    
+
 	return NULL;
 }
 
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 	pthread_t threads[threads_num];
 
 	if (pthread_mutex_init(&m, NULL)) {
-        print("Error create mutex.\n");
+        PrintHelper("Error create mutex.\n");
         exit(EXIT_FAILURE);
     }
 
