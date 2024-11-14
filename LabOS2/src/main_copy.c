@@ -44,7 +44,7 @@ void *ThreadFunction(void *args) {
 			++local;
 		}
 	}
-
+   
     if (pthread_mutex_lock(&m) != 0){
         PrintHelper("Error lock mutex.\n");
         exit(EXIT_FAILURE);
@@ -56,7 +56,7 @@ void *ThreadFunction(void *args) {
         PrintHelper("Error unlock mutex.\n");
         exit(EXIT_FAILURE);
     }
-
+    
 	return NULL;
 }
 
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
 			exit(EXIT_FAILURE);
 		}
 	}
-
+    
 	pthread_mutex_destroy(&m);
 
 	PrintHelper("==== %d ====\n", matches);
