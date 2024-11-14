@@ -19,28 +19,26 @@ void PrintHelper(const char *fmt, ...) {
 	if (write(STDOUT_FILENO, buffer, strlen(buffer)) == -1) {
 		exit(EXIT_FAILURE);
 	}
-
 	va_end(args);
 }
 
 void *ThreadFunction(void *args) {
-	size_t round = *(size_t *)args;
+	size_t round = ((size_t *)args)[0];
+	unsigned int seed = ((size_t *)args)[1];  // Get uniq seed for thread
 	int local = 0;
 	int deck[DECK_NUM];
 	for (int j = 0; j < DECK_NUM; j++) {
 		deck[j] = j;
 	}
 
-	srand(time(NULL) ^ pthread_self());
-
 	for (size_t i = 0; i < round; i++) {
 		for (int j = DECK_NUM - 1; j > 0; j--) {
-			int k = rand() % (j + 1);
+			int k = rand_r(&seed) % (j + 1);
 			int temp = deck[j];
 			deck[j] = deck[k];
 			deck[k] = temp;
 		}
-		
+
 		if (deck[0] % 4 == deck[1] % 4) {
 			++local;
 		}
@@ -60,10 +58,13 @@ int main(int argc, char **argv) {
 	size_t rounds = atol(argv[2]);
 	size_t rounds_for_thread = rounds / threads_num;
 	pthread_t threads[threads_num];
+	size_t thread_args[threads_num][2];
 
 	// Creating threads
 	for (size_t i = 0; i < threads_num; i++) {
-		if (pthread_create(&threads[i], NULL, ThreadFunction, &rounds_for_thread) != 0) {
+		thread_args[i][0] = rounds_for_thread;
+		thread_args[i][1] = time(NULL) ^ (i + 1);  // Уникальный seed для каждого потока
+		if (pthread_create(&threads[i], NULL, ThreadFunction, thread_args[i]) != 0) {
 			PrintHelper("Error. Thread %zu not created\n", i);
 			exit(EXIT_FAILURE);
 		}
