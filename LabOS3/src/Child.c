@@ -40,10 +40,9 @@ int main() {
         HandleError("Error connecting to semaphore.\n");
     }
 
-    // Ожидание данных от родительского процесса
+    // Ожидаем сигнала от родителя
     sem_wait(semaphore);
 
-    // Чтение имени файла из shared memory
     char filename[BUFFER_SIZE];
     strncpy(filename, shared_mem, BUFFER_SIZE);
 
@@ -63,7 +62,6 @@ int main() {
     while ((bytesRead = read(file, buffer, BUFFER_SIZE)) > 0) {
         current = buffer;
 
-        // Чтение первого числа
         while (current < buffer + bytesRead) {
             while (*current == ' ' || *current == '\t') current++;
             if (*current == '\n') {
@@ -78,7 +76,6 @@ int main() {
             }
             current = endptr;
 
-            // Чтение и деление на последующие числа
             while (current < buffer + bytesRead && *current != '\n') {
                 while (*current == ' ' || *current == '\t') current++;
                 if (*current == '\n') break;
@@ -93,7 +90,6 @@ int main() {
                 current = endptr;
             }
 
-            // Запись результата в shared memory для каждой строки
             char result[BUFFER_SIZE];
             int result_len = snprintf(result, BUFFER_SIZE, "Result: %.6f\n", num_first);
             strncpy(shared_mem + line_number * BUFFER_SIZE, result, result_len + 1);

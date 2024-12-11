@@ -24,12 +24,14 @@ int main() {
         perror("Error creating shared memory");
         exit(EXIT_FAILURE);
     }
-
+    
+    // Изменяет объём памяти
     if (ftruncate(shm_fd, BUFFER_SIZE * NUM_LINES) == -1) {
         perror("Error resizing shared memory");
         exit(EXIT_FAILURE);
     }
 
+    // Отображает BUFFER_SIZE * NUM_LINES байтов в память
     shared_mem = mmap(NULL, BUFFER_SIZE * NUM_LINES, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     if (shared_mem == MAP_FAILED) {
         perror("Error mapping shared memory");
@@ -43,7 +45,6 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    // Считывание имени файла
     char filename[BUFFER_SIZE];
     write(STDOUT_FILENO, "Enter filename path: ", 22);
     if (fgets(filename, sizeof(filename), stdin) == NULL) {
@@ -51,7 +52,6 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    // Удаление символа '\n' в конце строки
     size_t len = strlen(filename);
     if (len > 0 && filename[len - 1] == '\n') {
         filename[len - 1] = '\0';
@@ -60,7 +60,6 @@ int main() {
     // Запись имени файла в shared memory
     strncpy(shared_mem, filename, BUFFER_SIZE);
     
-    // Создание дочернего процесса
     pid_t child_pid = fork();
     if (child_pid == -1) {
         perror("Error creating child process");
@@ -74,7 +73,6 @@ int main() {
     } else {
         sem_post(semaphore); // Сигнализируем дочернему процессу
 
-        // Ожидаем завершения дочернего процесса
         wait(NULL);
 
         // Чтение результата из shared memory
