@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <dlfcn.h>
+#include <sys/mman.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -18,13 +21,9 @@
 typedef struct Allocator Allocator;
 typedef struct Block Block;
 
-// инициализация структуры аллокатора
 typedef Allocator *allocator_create_f(void *const memory, const size_t size);
-// деинициализация структуры аллокатора
 typedef void allocator_destroy_f(Allocator *const allocator);
-// выделение памяти аллокатором памяти размера size
 typedef void *allocator_alloc_f(Allocator *const allocator, const size_t size);
-// возвращает выделенную память аллокатору
 typedef void allocator_free_f(Allocator *const allocator, void *const memory);
 
-#endif // ALLOCATOR_H
+#endif
