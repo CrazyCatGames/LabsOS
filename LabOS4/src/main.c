@@ -2,6 +2,57 @@
 
 #define MEMORY_POOL_SIZE 1024
 
+static Allocator *allocator_create_stub(void *const memory, const size_t size) {
+	const char msg[] = "allocator_create: Function not found, using mmap\n";
+	write(STDERR_FILENO, msg, sizeof(msg) - 1);
+
+	void *mapped_memory = mmap(memory, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+	if (mapped_memory == MAP_FAILED) {
+		const char err_msg[] = "allocator_create: mmap failed\n";
+		write(STDERR_FILENO, err_msg, sizeof(err_msg) - 1);
+		return NULL;
+	}
+
+	return (Allocator *)mapped_memory;
+}
+
+static void allocator_destroy_stub(Allocator *const allocator) {
+	const char msg[] = "allocator_destroy: Function not found, using munmap\n";
+	write(STDERR_FILENO, msg, sizeof(msg) - 1);
+
+	if (allocator) {
+		if (munmap(allocator, MEMORY_POOL_SIZE) == -1) {
+			const char err_msg[] = "allocator_destroy: munmap failed\n";
+			write(STDERR_FILENO, err_msg, sizeof(err_msg) - 1);
+		}
+	}
+}
+
+static void *allocator_alloc_stub(Allocator *const allocator, const size_t size) {
+	const char msg[] = "allocator_alloc: Function not found, using mmap\n";
+	write(STDERR_FILENO, msg, sizeof(msg) - 1);
+
+	void *mapped_memory = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (mapped_memory == MAP_FAILED) {
+		const char err_msg[] = "allocator_alloc: mmap failed\n";
+		write(STDERR_FILENO, err_msg, sizeof(err_msg) - 1);
+		return NULL;
+	}
+
+	return mapped_memory;
+}
+
+static void allocator_free_stub(Allocator *const allocator, void *const memory) {
+	const char msg[] = "allocator_free: Function not found, using munmap\n";
+	write(STDERR_FILENO, msg, sizeof(msg) - 1);
+
+	if (memory && munmap(memory, sizeof(memory)) == -1) {
+		const char err_msg[] = "allocator_free: munmap failed\n";
+		write(STDERR_FILENO, err_msg, sizeof(err_msg) - 1);
+	}
+}
+
+
 static allocator_create_f *allocator_create;
 static allocator_destroy_f *allocator_destroy;
 static allocator_alloc_f *allocator_alloc;
@@ -28,32 +79,35 @@ int main(int argc, char **argv) {
 		allocator_alloc = dlsym(library, "allocator_alloc");
 		allocator_free = dlsym(library, "allocator_free");
 
-		if (!allocator_create || !allocator_destroy || !allocator_alloc || !allocator_free) {
-			const char msg[] = "Failed to load functions from library\n";
-			write(STDERR_FILENO, msg, sizeof(msg));
-			dlclose(library);
-			return EXIT_FAILURE;
+		if (!allocator_create) {
+			allocator_create = allocator_create_stub;
 		}
-	} else {
-		const char msg[] = "warning: library failed to load, trying standard implemntations\n";
-		write(STDERR_FILENO, msg, sizeof(msg));
+		if (!allocator_destroy) {
+			allocator_destroy = allocator_destroy_stub;
+		}
+		if (!allocator_alloc) {
+			allocator_alloc = allocator_alloc_stub;
+		}
+		if (!allocator_free) {
+			allocator_free = allocator_free_stub;
+		}
 
-		// NOTE: Trying standard implementations
-		library = dlopen("libm.so.6", RTLD_GLOBAL | RTLD_LAZY);
-		if (library == NULL) {
-			const char msg[] = "error: failed to open standard math library\n";
-			write(STDERR_FILENO, msg, sizeof(msg));
-			return EXIT_FAILURE;
-		}
+	} else {
+		const char msg[] = "error: failed to open custom library\n";
+		write(STDERR_FILENO, msg, sizeof(msg));
+		return EXIT_FAILURE;
 	}
 
+
+  // Teсты библиотеки
 	uint8_t memory_pool[MEMORY_POOL_SIZE];
 	Allocator *allocator = allocator_create(memory_pool, MEMORY_POOL_SIZE);
 
 	if (!allocator) {
 		const char msg[] = "Failed to initialize allocator\n";
 		write(STDERR_FILENO, msg, sizeof(msg));
-		dlclose(library);
+		if (library) dlclose(library);
+  
 		return EXIT_FAILURE;
 	}
 
@@ -77,6 +131,8 @@ int main(int argc, char **argv) {
 		write(STDERR_FILENO, msg, sizeof(msg));
 	}
 
+
+
 	if (int_block) {
 		allocator_free(allocator, int_block);
 		const char msg[] = "Freed int_block\n";
@@ -91,11 +147,9 @@ int main(int argc, char **argv) {
 
 	allocator_destroy(allocator);
 	const char msg[] = "Allocator destroyed\n";
-    write(STDOUT_FILENO, msg, sizeof(msg));
+	write(STDOUT_FILENO, msg, sizeof(msg));
 
-	if (library) {
-		dlclose(library);
-	}
+	if (library) dlclose(library);
 
 	return EXIT_SUCCESS;
 }

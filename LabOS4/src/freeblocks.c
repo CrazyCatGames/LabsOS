@@ -2,20 +2,17 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// Структура блока памяти
 struct Block {
     size_t size;        // Размер блока
     Block *next;        // Указатель на следующий свободный блок
 };
 
-// Структура аллокатора
 struct Allocator {
     Block *free_list;   // Список свободных блоков
     uint8_t *memory;    // Память, выделенная для аллокатора
     size_t total_size;  // Общий размер памяти
 };
 
-// Функция для создания аллокатора
 Allocator* allocator_create(void *const memory, const size_t size) {
     if (!memory || size < sizeof(Block)) {
         return NULL; // Не хватает памяти для аллокатора
@@ -40,7 +37,6 @@ void allocator_destroy(Allocator *const allocator) {
     }
 }
 
-// Функция для выделения памяти
 void* allocator_alloc(Allocator *const allocator, const size_t size) {
     if (size == 0) return NULL;
 
@@ -74,7 +70,6 @@ void* allocator_alloc(Allocator *const allocator, const size_t size) {
     return NULL; // Нет достаточно большого свободного блока
 }
 
-// Функция для освобождения памяти
 void allocator_free(Allocator *const allocator, void *const memory) {
     if (!memory) return;
 

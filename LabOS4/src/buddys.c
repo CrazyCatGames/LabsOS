@@ -13,7 +13,7 @@ EXPORT Allocator* allocator_create(void *const memory, const size_t size) {
     Allocator *allocator = (Allocator *)memory;
     allocator->memory = (void *)((uint8_t *)memory + sizeof(Allocator));
     allocator->size = size - sizeof(Allocator);
-    allocator->block_size = 16; // Минимальный размер блока
+    allocator->block_size = 32;
     allocator->bitmap = (uint8_t *)allocator->memory;
 
     size_t bitmap_size = allocator->size / allocator->block_size / 8;
@@ -52,7 +52,7 @@ EXPORT void* allocator_alloc(Allocator *const allocator, const size_t size) {
         }
     }
 
-    return NULL; // Недостаточно памяти
+    return NULL;
 }
 
 EXPORT void allocator_free(Allocator *const allocator, void *const memory) {
